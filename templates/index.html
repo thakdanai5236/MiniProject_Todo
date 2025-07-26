@@ -1,23 +1,491 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-    <title>Todo App</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo Application</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .nav-links {
+            margin-top: 20px;
+        }
+        
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 10px 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .form-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 14px;
+            margin: 2px;
+        }
+        
+        .todo-list {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .todo-item {
+            background: white;
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .todo-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        .todo-item.completed {
+            opacity: 0.9;
+            background: #f0f9f0;
+            border-left: 5px solid #4caf50;
+        }
+        
+        .todo-item.overdue {
+            background: #fff5f5;
+            border-left: 5px solid #f44336;
+        }
+        
+        .todo-item.pending {
+            background: #fffef0;
+            border-left: 5px solid #ff9800;
+        }
+        
+        .todo-item.completed .todo-title {
+            text-decoration: line-through;
+            color: #4caf50;
+        }
+        
+        .todo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        
+        .todo-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .todo-description {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .todo-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+            color: #888;
+        }
+        
+        .due-date {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-weight: 500;
+        }
+        
+        .due-date.overdue {
+            background: #ffebee;
+            color: #f44336;
+            border: 1px solid #f44336;
+        }
+        
+        .due-date.pending {
+            background: #fff3e0;
+            color: #ff9800;
+            border: 1px solid #ff9800;
+        }
+        
+        .due-date.completed {
+            background: #e8f5e8;
+            color: #4caf50;
+            border: 1px solid #4caf50;
+        }
+        
+        .todo-actions {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .status-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-completed {
+            background: #e8f5e8;
+            color: #4caf50;
+            border: 1px solid #4caf50;
+        }
+        
+        .status-pending {
+            background: #fff3e0;
+            color: #ff9800;
+            border: 1px solid #ff9800;
+        }
+        
+        .status-overdue {
+            background: #ffebee;
+            color: #f44336;
+            border: 1px solid #f44336;
+        }
+        
+        .edit-form {
+            display: none;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .edit-form.active {
+            display: block;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .todo-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .todo-actions {
+                margin-top: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Simple Todo App</h1>
-
-    <form action="/create-todo" method="post">
-        <input type="text" name="item" placeholder="Enter a new todo" required>
-        <button type="submit">Add</button>
-    </form>
-
-    <h2>Todo List:</h2>
-    <ul>
-        {% for todo in todos %}
-            <li>{{ todo }}</li>
-        {% else %}
-            <li>No todos yet!</li>
-        {% endfor %}
-    </ul>
+    <div class="container">
+        <div class="header">
+            <h1>📝 {{ page_title or "Todo Application" }}</h1>
+            <p>{% if is_upcoming_page %}งานที่ยังไม่ครบกำหนดและยังไม่เสร็จ{% elif is_completed_page %}งานที่เสร็จเรียบร้อยแล้ว{% elif is_overdue_page %}งานที่เกินกำหนดและยังไม่เสร็จ{% else %}จัดการงานของคุณอย่างมีประสิทธิภาพ{% endif %}</p>
+            <div class="nav-links">
+                <a href="/" {% if not is_upcoming_page and not is_completed_page and not is_overdue_page %}style="background: rgba(255,255,255,0.2);"{% endif %}>ทั้งหมด</a>
+                <a href="/upcoming" {% if is_upcoming_page %}style="background: rgba(255,255,255,0.2);"{% endif %}>งานที่ยังไม่ครบกำหนด</a>
+                <a href="/completed" {% if is_completed_page %}style="background: rgba(255,255,255,0.2);"{% endif %}>งานที่เสร็จแล้ว</a>
+                <a href="/overdue" {% if is_overdue_page %}style="background: rgba(255,255,255,0.2);"{% endif %}>งานที่เกินกำหนด</a>
+            </div>
+        </div>
+        
+        <div class="content">
+            <!-- Statistics -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number">{{ todos|length }}</div>
+                    <div class="stat-label">งานทั้งหมด</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ todos|selectattr('completed', 'equalto', false)|list|length }}</div>
+                    <div class="stat-label">งานที่ยังไม่เสร็จ</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ todos|selectattr('completed', 'equalto', true)|list|length }}</div>
+                    <div class="stat-label">งานที่เสร็จแล้ว</div>
+                </div>
+            </div>
+            
+            <!-- Add Todo Form -->
+            {% if not is_upcoming_page and not is_completed_page and not is_overdue_page %}
+            <div class="form-section">
+                <h2>➕ เพิ่มงานใหม่</h2>
+                <form action="/create-todo" method="post">
+                    <div class="form-group">
+                        <label for="title">ชื่องาน *</label>
+                        <input type="text" id="title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">รายละเอียด</label>
+                        <textarea id="description" name="description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="due_date">วันที่ครบกำหนด *</label>
+                        <input type="date" id="due_date" name="due_date" required>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="completed" name="completed">
+                            <label for="completed">เสร็จแล้ว</label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">เพิ่มงาน</button>
+                </form>
+            </div>
+            {% endif %}
+            
+            <!-- Todo List -->
+            <div class="todo-list">
+                {% for todo in todos %}
+                {% set today = '2025-07-26' %}
+                {% set is_overdue = todo.due_date < today and not todo.completed %}
+                <div class="todo-item {% if todo.completed %}completed{% elif is_overdue %}overdue{% else %}pending{% endif %}">
+                    <div class="status-badge {% if todo.completed %}status-completed{% elif is_overdue %}status-overdue{% else %}status-pending{% endif %}">
+                        {% if todo.completed %}✅ เสร็จแล้ว{% elif is_overdue %}⚠️ เกินกำหนด{% else %}⏳ รอดำเนินการ{% endif %}
+                    </div>
+                    
+                    <div class="todo-header">
+                        <div>
+                            <div class="todo-title">{{ todo.title }}</div>
+                            {% if todo.description %}
+                            <div class="todo-description">{{ todo.description }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="todo-meta">
+                        <div class="due-date {% if todo.completed %}completed{% elif is_overdue %}overdue{% else %}pending{% endif %}">
+                            📅 {{ todo.due_date }}
+                        </div>
+                        <div class="todo-actions">
+                            <form action="/toggle-todo/{{ todo.id }}" method="post" style="display: inline;">
+                                <button type="submit" class="btn btn-small {% if todo.completed %}btn-success{% else %}btn-success{% endif %}">
+                                    {% if todo.completed %}↩️ ยกเลิก{% else %}✅ เสร็จ{% endif %}
+                                </button>
+                            </form>
+                            <button onclick="toggleEdit({{ todo.id }})" class="btn btn-small">✏️ แก้ไข</button>
+                            <form action="/delete-todo/{{ todo.id }}" method="post" style="display: inline;" 
+                                  onsubmit="return confirm('คุณต้องการลบงานนี้หรือไม่?')">
+                                <button type="submit" class="btn btn-small btn-danger">🗑️ ลบ</button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Edit Form -->
+                    <div id="edit-form-{{ todo.id }}" class="edit-form">
+                        <h3>แก้ไขงาน</h3>
+                        <form action="/update-todo/{{ todo.id }}" method="post">
+                            <div class="form-group">
+                                <label>ชื่องาน *</label>
+                                <input type="text" name="title" value="{{ todo.title }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label>รายละเอียด</label>
+                                <textarea name="description">{{ todo.description }}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>วันที่ครบกำหนด *</label>
+                                <input type="date" name="due_date" value="{{ todo.due_date }}" required>
+                            </div>
+                            <div class="form-group">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" name="completed" {% if todo.completed %}checked{% endif %}>
+                                    <label>เสร็จแล้ว</label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-small">💾 บันทึก</button>
+                            <button type="button" onclick="toggleEdit({{ todo.id }})" class="btn btn-small">❌ ยกเลิก</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                {% if not todos %}
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    <h3>{% if is_upcoming_page %}ไม่มีงานที่ยังไม่ครบกำหนด{% elif is_completed_page %}ไม่มีงานที่เสร็จแล้ว{% elif is_overdue_page %}ไม่มีงานที่เกินกำหนด{% else %}ยังไม่มีงานในรายการ{% endif %}</h3>
+                    <p>{% if is_upcoming_page %}งานทั้งหมดเสร็จแล้วหรือครบกำหนดแล้ว{% elif is_completed_page %}ยังไม่มีงานที่เสร็จเรียบร้อย{% elif is_overdue_page %}ไม่มีงานที่เกินกำหนด{% else %}เริ่มต้นโดยการเพิ่มงานใหม่!{% endif %}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function toggleEdit(todoId) {
+            const editForm = document.getElementById(`edit-form-${todoId}`);
+            editForm.classList.toggle('active');
+        }
+        
+        // Set today as minimum date for new todos
+        document.addEventListener('DOMContentLoaded', function() {
+            // ไม่จำกัดวันที่ - ให้เลือกวันก่อนหน้าได้
+            // const today = new Date().toISOString().split('T')[0];
+            // document.getElementById('due_date').setAttribute('min', today);
+        });
+    </script>
 </body>
 </html>
