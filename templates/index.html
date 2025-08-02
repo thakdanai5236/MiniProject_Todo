@@ -51,11 +51,16 @@
             border: 2px solid rgba(255,255,255,0.3);
             border-radius: 25px;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
         
         .nav-links a:hover {
             background: rgba(255,255,255,0.2);
             transform: translateY(-2px);
+        }
+        
+        .nav-links a.active {
+            background: rgba(255,255,255,0.2);
         }
         
         .content {
@@ -311,6 +316,16 @@
             opacity: 0.9;
         }
         
+        .hidden {
+            display: none;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -337,19 +352,25 @@
             .todo-actions {
                 margin-top: 10px;
             }
+            
+            .nav-links a {
+                margin: 5px;
+                padding: 8px 15px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📝 {{ page_title or "Todo Application" }}</h1>
-            <p>{% if is_upcoming_page %}งานที่ยังไม่ครบกำหนดและยังไม่เสร็จ{% elif is_completed_page %}งานที่เสร็จเรียบร้อยแล้ว{% elif is_overdue_page %}งานที่เกินกำหนดและยังไม่เสร็จ{% else %}จัดการงานของคุณอย่างมีประสิทธิภาพ{% endif %}</p>
+            <h1 id="page-title">📝 Todo Application</h1>
+            <p id="page-description">จัดการงานของคุณอย่างมีประสิทธิภาพ</p>
             <div class="nav-links">
-                <a href="/" {% if not is_upcoming_page and not is_completed_page and not is_overdue_page %}style="background: rgba(255,255,255,0.2);"{% endif %}>ทั้งหมด</a>
-                <a href="/upcoming" {% if is_upcoming_page %}style="background: rgba(255,255,255,0.2);"{% endif %}>งานที่ยังไม่ครบกำหนด</a>
-                <a href="/completed" {% if is_completed_page %}style="background: rgba(255,255,255,0.2);"{% endif %}>งานที่เสร็จแล้ว</a>
-                <a href="/overdue" {% if is_overdue_page %}style="background: rgba(255,255,255,0.2);"{% endif %}>งานที่เกินกำหนด</a>
+                <a onclick="showPage('all')" id="nav-all" class="active">ทั้งหมด</a>
+                <a onclick="showPage('upcoming')" id="nav-upcoming">งานที่ยังไม่ครบกำหนด</a>
+                <a onclick="showPage('completed')" id="nav-completed">งานที่เสร็จแล้ว</a>
+                <a onclick="showPage('overdue')" id="nav-overdue">งานที่เกินกำหนด</a>
             </div>
         </div>
         
@@ -357,134 +378,313 @@
             <!-- Statistics -->
             <div class="stats">
                 <div class="stat-card">
-                    <div class="stat-number">{{ todos|length }}</div>
+                    <div class="stat-number" id="total-count">0</div>
                     <div class="stat-label">งานทั้งหมด</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number">{{ todos|selectattr('completed', 'equalto', false)|list|length }}</div>
+                    <div class="stat-number" id="pending-count">0</div>
                     <div class="stat-label">งานที่ยังไม่เสร็จ</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number">{{ todos|selectattr('completed', 'equalto', true)|list|length }}</div>
+                    <div class="stat-number" id="completed-count">0</div>
                     <div class="stat-label">งานที่เสร็จแล้ว</div>
                 </div>
             </div>
             
             <!-- Add Todo Form -->
-            {% if not is_upcoming_page and not is_completed_page and not is_overdue_page %}
-            <div class="form-section">
+            <div class="form-section" id="add-form">
                 <h2>➕ เพิ่มงานใหม่</h2>
-                <form action="/create-todo" method="post">
+                <form onsubmit="addTodo(event)">
                     <div class="form-group">
                         <label for="title">ชื่องาน *</label>
-                        <input type="text" id="title" name="title" required>
+                        <input type="text" id="title" required>
                     </div>
                     <div class="form-group">
                         <label for="description">รายละเอียด</label>
-                        <textarea id="description" name="description"></textarea>
+                        <textarea id="description"></textarea>
                     </div>
                     <div class="form-group">
                         <label for="due_date">วันที่ครบกำหนด *</label>
-                        <input type="date" id="due_date" name="due_date" required>
+                        <input type="date" id="due_date" required>
                     </div>
                     <div class="form-group">
                         <div class="checkbox-group">
-                            <input type="checkbox" id="completed" name="completed">
+                            <input type="checkbox" id="completed">
                             <label for="completed">เสร็จแล้ว</label>
                         </div>
                     </div>
                     <button type="submit" class="btn">เพิ่มงาน</button>
                 </form>
             </div>
-            {% endif %}
             
             <!-- Todo List -->
-            <div class="todo-list">
-                {% for todo in todos %}
-                {% set today = '2025-07-26' %}
-                {% set is_overdue = todo.due_date < today and not todo.completed %}
-                <div class="todo-item {% if todo.completed %}completed{% elif is_overdue %}overdue{% else %}pending{% endif %}">
-                    <div class="status-badge {% if todo.completed %}status-completed{% elif is_overdue %}status-overdue{% else %}status-pending{% endif %}">
-                        {% if todo.completed %}✅ เสร็จแล้ว{% elif is_overdue %}⚠️ เกินกำหนด{% else %}⏳ รอดำเนินการ{% endif %}
-                    </div>
-                    
-                    <div class="todo-header">
-                        <div>
-                            <div class="todo-title">{{ todo.title }}</div>
-                            {% if todo.description %}
-                            <div class="todo-description">{{ todo.description }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <div class="todo-meta">
-                        <div class="due-date {% if todo.completed %}completed{% elif is_overdue %}overdue{% else %}pending{% endif %}">
-                            📅 {{ todo.due_date }}
-                        </div>
-                        <div class="todo-actions">
-                            <form action="/toggle-todo/{{ todo.id }}" method="post" style="display: inline;">
-                                <button type="submit" class="btn btn-small {% if todo.completed %}btn-success{% else %}btn-success{% endif %}">
-                                    {% if todo.completed %}↩️ ยกเลิก{% else %}✅ เสร็จ{% endif %}
-                                </button>
-                            </form>
-                            <button onclick="toggleEdit({{ todo.id }})" class="btn btn-small">✏️ แก้ไข</button>
-                            <form action="/delete-todo/{{ todo.id }}" method="post" style="display: inline;" 
-                                  onsubmit="return confirm('คุณต้องการลบงานนี้หรือไม่?')">
-                                <button type="submit" class="btn btn-small btn-danger">🗑️ ลบ</button>
-                            </form>
-                        </div>
-                    </div>
-                    
-                    <!-- Edit Form -->
-                    <div id="edit-form-{{ todo.id }}" class="edit-form">
-                        <h3>แก้ไขงาน</h3>
-                        <form action="/update-todo/{{ todo.id }}" method="post">
-                            <div class="form-group">
-                                <label>ชื่องาน *</label>
-                                <input type="text" name="title" value="{{ todo.title }}" required>
-                            </div>
-                            <div class="form-group">
-                                <label>รายละเอียด</label>
-                                <textarea name="description">{{ todo.description }}</textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>วันที่ครบกำหนด *</label>
-                                <input type="date" name="due_date" value="{{ todo.due_date }}" required>
-                            </div>
-                            <div class="form-group">
-                                <div class="checkbox-group">
-                                    <input type="checkbox" name="completed" {% if todo.completed %}checked{% endif %}>
-                                    <label>เสร็จแล้ว</label>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-small">💾 บันทึก</button>
-                            <button type="button" onclick="toggleEdit({{ todo.id }})" class="btn btn-small">❌ ยกเลิก</button>
-                        </form>
-                    </div>
-                </div>
-                {% endfor %}
-                
-                {% if not todos %}
-                <div style="text-align: center; padding: 40px; color: #666;">
-                    <h3>{% if is_upcoming_page %}ไม่มีงานที่ยังไม่ครบกำหนด{% elif is_completed_page %}ไม่มีงานที่เสร็จแล้ว{% elif is_overdue_page %}ไม่มีงานที่เกินกำหนด{% else %}ยังไม่มีงานในรายการ{% endif %}</h3>
-                    <p>{% if is_upcoming_page %}งานทั้งหมดเสร็จแล้วหรือครบกำหนดแล้ว{% elif is_completed_page %}ยังไม่มีงานที่เสร็จเรียบร้อย{% elif is_overdue_page %}ไม่มีงานที่เกินกำหนด{% else %}เริ่มต้นโดยการเพิ่มงานใหม่!{% endif %}</p>
-                </div>
-                {% endif %}
+            <div class="todo-list" id="todo-list">
+                <!-- Todos will be rendered here -->
+            </div>
+            
+            <!-- Empty State -->
+            <div class="empty-state hidden" id="empty-state">
+                <h3 id="empty-title">ยังไม่มีงานในรายการ</h3>
+                <p id="empty-description">เริ่มต้นโดยการเพิ่มงานใหม่!</p>
             </div>
         </div>
     </div>
     
     <script>
+        let todos = JSON.parse(localStorage.getItem('todos')) || [];
+        let currentPage = 'all';
+        let nextId = todos.length > 0 ? Math.max(...todos.map(t => t.id)) + 1 : 1;
+        
+        function saveTodos() {
+            localStorage.setItem('todos', JSON.stringify(todos));
+        }
+        
+        function getTodayDate() {
+            return new Date().toISOString().split('T')[0];
+        }
+        
+        function isOverdue(dueDate, completed) {
+            return dueDate < getTodayDate() && !completed;
+        }
+        
+        function updateStats() {
+            const total = todos.length;
+            const completed = todos.filter(todo => todo.completed).length;
+            const pending = total - completed;
+            
+            document.getElementById('total-count').textContent = total;
+            document.getElementById('pending-count').textContent = pending;
+            document.getElementById('completed-count').textContent = completed;
+        }
+        
+        function filterTodos() {
+            const today = getTodayDate();
+            
+            switch(currentPage) {
+                case 'all':
+                    return todos;
+                case 'upcoming':
+                    return todos.filter(todo => !todo.completed && todo.due_date >= today);
+                case 'completed':
+                    return todos.filter(todo => todo.completed);
+                case 'overdue':
+                    return todos.filter(todo => isOverdue(todo.due_date, todo.completed));
+                default:
+                    return todos;
+            }
+        }
+        
+        function renderTodos() {
+            const filteredTodos = filterTodos();
+            const todoList = document.getElementById('todo-list');
+            const emptyState = document.getElementById('empty-state');
+            
+            if (filteredTodos.length === 0) {
+                todoList.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                
+                // Update empty state messages
+                const emptyTitle = document.getElementById('empty-title');
+                const emptyDescription = document.getElementById('empty-description');
+                
+                switch(currentPage) {
+                    case 'upcoming':
+                        emptyTitle.textContent = 'ไม่มีงานที่ยังไม่ครบกำหนด';
+                        emptyDescription.textContent = 'งานทั้งหมดเสร็จแล้วหรือครบกำหนดแล้ว';
+                        break;
+                    case 'completed':
+                        emptyTitle.textContent = 'ไม่มีงานที่เสร็จแล้ว';
+                        emptyDescription.textContent = 'ยังไม่มีงานที่เสร็จเรียบร้อย';
+                        break;
+                    case 'overdue':
+                        emptyTitle.textContent = 'ไม่มีงานที่เกินกำหนด';
+                        emptyDescription.textContent = 'ไม่มีงานที่เกินกำหนด';
+                        break;
+                    default:
+                        emptyTitle.textContent = 'ยังไม่มีงานในรายการ';
+                        emptyDescription.textContent = 'เริ่มต้นโดยการเพิ่มงานใหม่!';
+                }
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            todoList.innerHTML = filteredTodos.map(todo => {
+                const overdue = isOverdue(todo.due_date, todo.completed);
+                const statusClass = todo.completed ? 'completed' : (overdue ? 'overdue' : 'pending');
+                const statusBadgeClass = todo.completed ? 'status-completed' : (overdue ? 'status-overdue' : 'status-pending');
+                const statusText = todo.completed ? '✅ เสร็จแล้ว' : (overdue ? '⚠️ เกินกำหนด' : '⏳ รอดำเนินการ');
+                const dueDateClass = todo.completed ? 'completed' : (overdue ? 'overdue' : 'pending');
+                
+                return `
+                    <div class="todo-item ${statusClass}">
+                        <div class="status-badge ${statusBadgeClass}">
+                            ${statusText}
+                        </div>
+                        
+                        <div class="todo-header">
+                            <div>
+                                <div class="todo-title">${todo.title}</div>
+                                ${todo.description ? `<div class="todo-description">${todo.description}</div>` : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="todo-meta">
+                            <div class="due-date ${dueDateClass}">
+                                📅 ${todo.due_date}
+                            </div>
+                            <div class="todo-actions">
+                                <button onclick="toggleTodo(${todo.id})" class="btn btn-small btn-success">
+                                    ${todo.completed ? '↩️ ยกเลิก' : '✅ เสร็จ'}
+                                </button>
+                                <button onclick="toggleEdit(${todo.id})" class="btn btn-small">✏️ แก้ไข</button>
+                                <button onclick="deleteTodo(${todo.id})" class="btn btn-small btn-danger">🗑️ ลบ</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Edit Form -->
+                        <div id="edit-form-${todo.id}" class="edit-form">
+                            <h3>แก้ไขงาน</h3>
+                            <form onsubmit="updateTodo(event, ${todo.id})">
+                                <div class="form-group">
+                                    <label>ชื่องาน *</label>
+                                    <input type="text" name="title" value="${todo.title}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>รายละเอียด</label>
+                                    <textarea name="description">${todo.description}</textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>วันที่ครบกำหนด *</label>
+                                    <input type="date" name="due_date" value="${todo.due_date}" required>
+                                </div>
+                                <div class="form-group">
+                                    <div class="checkbox-group">
+                                        <input type="checkbox" name="completed" ${todo.completed ? 'checked' : ''}>
+                                        <label>เสร็จแล้ว</label>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-small">💾 บันทึก</button>
+                                <button type="button" onclick="toggleEdit(${todo.id})" class="btn btn-small">❌ ยกเลิก</button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function showPage(page) {
+            currentPage = page;
+            
+            // Update navigation
+            document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+            document.getElementById(`nav-${page}`).classList.add('active');
+            
+            // Update header
+            const titles = {
+                all: '📝 Todo Application',
+                upcoming: '📝 งานที่ยังไม่ครบกำหนด',
+                completed: '📝 งานที่เสร็จแล้ว',
+                overdue: '📝 งานที่เกินกำหนด'
+            };
+            
+            const descriptions = {
+                all: 'จัดการงานของคุณอย่างมีประสิทธิภาพ',
+                upcoming: 'งานที่ยังไม่ครบกำหนดและยังไม่เสร็จ',
+                completed: 'งานที่เสร็จเรียบร้อยแล้ว',
+                overdue: 'งานที่เกินกำหนดและยังไม่เสร็จ'
+            };
+            
+            document.getElementById('page-title').textContent = titles[page];
+            document.getElementById('page-description').textContent = descriptions[page];
+            
+            // Show/hide add form
+            const addForm = document.getElementById('add-form');
+            if (page === 'all') {
+                addForm.classList.remove('hidden');
+            } else {
+                addForm.classList.add('hidden');
+            }
+            
+            renderTodos();
+        }
+        
+        function addTodo(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+            const due_date = document.getElementById('due_date').value;
+            const completed = document.getElementById('completed').checked;
+            
+            const newTodo = {
+                id: nextId++,
+                title,
+                description,
+                due_date,
+                completed
+            };
+            
+            todos.push(newTodo);
+            saveTodos();
+            
+            // Reset form
+            document.getElementById('title').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('due_date').value = '';
+            document.getElementById('completed').checked = false;
+            
+            updateStats();
+            renderTodos();
+        }
+        
+        function toggleTodo(id) {
+            const todo = todos.find(t => t.id === id);
+            if (todo) {
+                todo.completed = !todo.completed;
+                saveTodos();
+                updateStats();
+                renderTodos();
+            }
+        }
+        
         function toggleEdit(todoId) {
             const editForm = document.getElementById(`edit-form-${todoId}`);
             editForm.classList.toggle('active');
         }
         
-        // Set today as minimum date for new todos
+        function updateTodo(event, id) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const todo = todos.find(t => t.id === id);
+            
+            if (todo) {
+                todo.title = form.title.value;
+                todo.description = form.description.value;
+                todo.due_date = form.due_date.value;
+                todo.completed = form.completed.checked;
+                
+                toggleEdit(id);
+                saveTodos();
+                updateStats();
+                renderTodos();
+            }
+        }
+        
+        function deleteTodo(id) {
+            if (confirm('คุณต้องการลบงานนี้หรือไม่?')) {
+                todos = todos.filter(t => t.id !== id);
+                saveTodos();
+                updateStats();
+                renderTodos();
+            }
+        }
+        
+        // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            // ไม่จำกัดวันที่ - ให้เลือกวันก่อนหน้าได้
-            // const today = new Date().toISOString().split('T')[0];
-            // document.getElementById('due_date').setAttribute('min', today);
+            updateStats();
+            renderTodos();
         });
     </script>
 </body>
